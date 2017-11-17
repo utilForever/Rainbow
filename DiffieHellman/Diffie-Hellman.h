@@ -5,7 +5,6 @@
 #ifndef DIFFIE_HELLMAN_DIFFIE_HELLMAN_H
 #define DIFFIE_HELLMAN_DIFFIE_HELLMAN_H
 
-#pragma once
 #include <cstdint>
 #include <cmath>
 #include <stdexcept>
@@ -14,87 +13,33 @@
 class DiffieHellmanUtil
 {
 public:
-    void setPModule(uint64_t _pModule)
-    {
-        if(!Prime(_pModule))
-        {
-            throw std::invalid_argument("pModule is not prime number.");
-        }
-        pModule = _pModule;
-    }
+    void SetPModule(uint64_t pModule);
+    void SetModule(uint64_t module);
 
-    void setModule(uint64_t _module)
-    {
-        module = _module;
-    }
+    uint64_t DiffieHellmanCalc();
 
-    uint64_t DiffieHellmanCalc()
-    {
-        uint64_t data = (uint64_t) pow(module, randModule) % pModule;
-
-        return data;
-    }
-
-    uint64_t GenerateRandModule()
-    {
-        std::random_device rd;
-        std::mt19937_64 mt(rd());
-        uint64_t data = mt() % MAX_SIZE + 1;
-
-        return data;
-    }
-
-    void remove()
-    {
-        pModule = 0;
-        module = 0;
-        randModule = 0;
-    }
-
-    uint64_t getPModule()
-    {
-        return pModule;
-    }
+    void Clear();
 
 private:
-    bool Prime(uint64_t _pModule)
-    {
-        if (_pModule == 1)
-        {
-            return false;
-        }
+    uint64_t GenerateRandModule();
+    bool IsPrime(uint64_t pModule);
 
-        if ((_pModule & 1) == 0)
-        {
-            return _pModule == 2;
-        }
+    const uint64_t MAX_SIZE = static_cast<uint64_t>(pow(2, 4));
 
-        for (uint64_t i = 2; i * i < _pModule; i+=2)
-        {
-            if(_pModule % i == 0)
-            {
-                return false;
-            }
-        }
+    uint64_t m_pModule = 0;
+    uint64_t m_module = 0;
+    uint64_t m_randModule = GenerateRandModule();
 
-        return true;
-    }
-
-    const uint64_t MAX_SIZE =  (uint64_t) pow(2, 4);
-
-    uint64_t pModule;
-    uint64_t module;
-    uint64_t randModule = GenerateRandModule();
 } util;
 
 uint64_t GenerateExchangeData(uint64_t pModule, uint64_t gModule)
 {
     if(pModule <= gModule)
     {
-        throw std::invalid_argument("module is not bigger than pModule.");
+        throw std::invalid_argument("gModule is not bigger than pModule.");
     }
-    util.setPModule(pModule);
-    util.setModule(gModule);
+    util.SetPModule(pModule);
+    util.SetModule(gModule);
     uint64_t data = util.DiffieHellmanCalc();
 
     return data;
@@ -102,11 +47,72 @@ uint64_t GenerateExchangeData(uint64_t pModule, uint64_t gModule)
 
 uint64_t GenerateExchangeKey(uint64_t responseData)
 {
-    util.setModule(responseData);
+    util.SetModule(responseData);
     uint64_t key = util.DiffieHellmanCalc();
-    util.remove();
+    util.Clear();
 
     return key;
+}
+
+void DiffieHellmanUtil::SetPModule(uint64_t pModule)
+{
+    if(!IsPrime(pModule))
+    {
+        throw std::invalid_argument("pModule is not prime number.");
+    }
+
+    m_pModule = pModule;
+}
+
+void DiffieHellmanUtil::SetModule(uint64_t module)
+{
+    m_module = module;
+}
+
+uint64_t DiffieHellmanUtil::DiffieHellmanCalc()
+{
+    uint64_t data = static_cast<uint64_t >(pow(m_module, m_randModule)) % m_pModule;
+
+    return data;
+}
+
+void DiffieHellmanUtil::Clear()
+{
+    m_pModule = 0;
+    m_module = 0;
+    m_randModule = 0;
+}
+
+uint64_t DiffieHellmanUtil::GenerateRandModule()
+{
+	std::random_device rd;
+	std::mt19937_64 mt(rd());
+	uint64_t data = mt() % MAX_SIZE + 1;
+
+	return data;
+}
+
+bool DiffieHellmanUtil::IsPrime(uint64_t pModule)
+{
+    if (pModule == 1)
+    {
+        return false;
+    }
+
+    if ((pModule & 1) == 0)
+    {
+        return pModule == 2;
+    }
+
+    for (uint64_t i = 2; i * i < pModule; i+=2)
+    {
+        if(pModule % i == 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 #endif //DIFFIE_HELLMAN_DIFFIE_HELLMAN_H
